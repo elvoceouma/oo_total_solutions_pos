@@ -1,0 +1,28 @@
+<?xml version='1.0' encoding='utf-8'?>
+<templates id="template" xml:space="preserve">
+
+    <t t-name="oo_total_solutions_pos.OrderReceipt" t-inherit="point_of_sale.OrderReceipt" t-inherit-mode="extension">
+
+        <xpath expr="//div[hasclass('pos-receipt')]//div[hasclass('before-footer')]" position="after">
+            <div t-if="props.data.esd_signature">
+                <br />
+                <div>
+                    <img t-if="props.data.esd_qr_code" id="posqrcode" t-att-src="'data:image/png;base64,' + props.data.esd_qr_code" width="110" heigh="110" style="margin: 0 auto !important;"/>
+                </div>
+                <div class="text-left">
+                    <p style="font-size: 11px !important;">
+                        <span>
+                            INVOICE CU NO: <t t-esc="props.data.esd_signature"/>
+                        </span>
+                    </p>
+                    <p style="font-size: 11px !important;">
+                        <span>
+                            DEVICE SERIAL: KRAMW011202207961149
+                        </span>
+                    </p>
+                </div>
+
+            </div>
+        </xpath>
+    </t>
+</templates>

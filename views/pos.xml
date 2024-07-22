@@ -1,0 +1,22 @@
+<?xml version='1.0' encoding='utf-8'?>
+<odoo>
+    <!-- pos.order inherit form view -->
+    <record id="oo_esd_view_pos_pos_form" model="ir.ui.view">
+        <field name="name">pos.order.inherit.view.form</field>
+        <field name="model">pos.order</field>
+        <field name="inherit_id" ref="point_of_sale.view_pos_pos_form"/>
+        <field name="arch" type="xml">
+
+            <xpath expr="//page[@name='extra']" position="inside">
+                <group name="esd" string="ESD">
+                    <field name="esd_date_signed" />
+                    <field name="esd_total_signed" />
+                    <field name="esd_signature"/>
+                    <field name="esd_qr_code" widget='image' class="oe_avatar"/>
+                    <field name="esd_device_serial"/>
+                </group>
+            </xpath>
+
+        </field>
+    </record>
+</odoo>
