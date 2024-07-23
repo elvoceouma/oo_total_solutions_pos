@@ -20,6 +20,8 @@ patch(Order.prototype, {
         this.esd_qr_code = null;
         this.esd_signature = null;
         this.esd_device_serial = null;
+        this.esd_date_signed = null;
+        this.esd_total_signed = null;
     },
 
     init_from_JSON(json) {
@@ -27,20 +29,8 @@ patch(Order.prototype, {
         this.esd_qr_code = json.esd_qr_code || null;
         this.esd_signature = json.esd_signature || null;
         this.esd_device_serial = json.esd_device_serial || null;
-    },
-
-    set_kra_data(kraData) {
-        this.esd_qr_code = kraData.qrCode || null;
-        this.esd_signature = kraData.invoiceCuNo || null;
-        this.esd_device_serial = kraData.deviceSerial || null;
-    },
-
-    get_kra_data() {
-        return {
-            esd_qr_code: this.esd_qr_code,
-            esd_signature: this.esd_signature,
-            esd_device_serial: this.esd_device_serial
-        };
+        this.esd_date_signed = json.esd_date_signed || null;
+        this.esd_total_signed = json.esd_total_signed || null;
     },
 
     export_as_JSON() {
@@ -48,15 +38,9 @@ patch(Order.prototype, {
         json.esd_qr_code = this.esd_qr_code;
         json.esd_signature = this.esd_signature;
         json.esd_device_serial = this.esd_device_serial;
+        json.esd_date_signed = this.esd_date_signed;
+        json.esd_total_signed = this.esd_total_signed;
         return json;
-    },
-
-    export_for_printing() {
-        const result = super.export_for_printing(...arguments);
-        result.esd_qr_code = this.esd_qr_code;
-        result.esd_signature = this.esd_signature;
-        result.esd_device_serial = this.esd_device_serial;
-        return result;
     },
 });
 
@@ -77,20 +61,26 @@ patch(PaymentScreen.prototype, {
     },
 
     async validateOrder(isForceValidate) {
-        super.validateOrder(isForceValidate);
-        console.log("Starting validateOrder");
-        const kraData = await this.initiateKPAPush();
-        console.log("KRA Data received:", kraData);
-        if (kraData) {
+        this.state.isLoading = true;
+        try {
             const order = this.pos.get_order();
-            order.set_kra_data(kraData);
-            console.log("KRA Data set on order:", order.get_kra_data());
-            // await this.sendKraDataToBackend(kraData);
-        } else {
-            console.warn("No KRA Data received");
+            const kraData = await this.initiateKPAPush(order);
+            if (kraData) {
+                order.esd_qr_code = kraData.qrCode;
+                order.esd_signature = kraData.invoiceCuNo;
+                order.esd_device_serial = kraData.deviceSerial;
+                order.esd_date_signed = kraData.dateSigned;
+                order.esd_total_signed = kraData.totalSigned;
+            }
+            await super.validateOrder(isForceValidate);
+        } catch (error) {
+            console.error("Error in validateOrder:", error);
+            this.notification.add(_t("Failed to validate order. Please try again."), {
+                type: 'danger',
+            });
+        } finally {
+            this.state.isLoading = false;
         }
-
-
     },
 
     async initiateKPAPush() {
@@ -136,7 +126,22 @@ patch(PaymentScreen.prototype, {
                 });
 
             console.log("KPAP Push Response:", response.data);
+ // Function to format date to the required format
+ function formatDate() {
+    const date = new Date();
+    const pad = (number) => number.toString().padStart(2, '0');
 
+    const year = date.getFullYear();
+    const month = pad(date.getMonth() + 1);
+    const day = pad(date.getDate());
+    const hours = pad(date.getHours());
+    const minutes = pad(date.getMinutes());
+    const seconds = pad(date.getSeconds());
+
+    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+}
+
+const formattedDate = formatDate();
             if (response.data && response.data.code === 0) {
                 const { qrCode, cuNumber } = response.data.data;
                 console.log("QR Code URL:", qrCode);
@@ -149,7 +154,8 @@ patch(PaymentScreen.prototype, {
                         qrCode: qrCodeBase64,
                         invoiceCuNo: cuNumber,
                         deviceSerial: "KRAMW011202207961149",
-                        dateSigned: new Date().toISOString(),
+                        dateSigned: formattedDate,
+                        totalSigned: order.get_total_with_tax()
                     };
                 }
             }
