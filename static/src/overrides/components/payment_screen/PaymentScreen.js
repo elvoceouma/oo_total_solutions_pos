@@ -56,7 +56,7 @@ patch(PaymentScreen.prototype, {
         });
         onWillStart(async () => {
             await loadJS("https://cdnjs.cloudflare.com/ajax/libs/axios/1.7.2/axios.min.js");
-            await loadJS("https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js");
+            //await loadJS("https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js");
         });
     },
 
